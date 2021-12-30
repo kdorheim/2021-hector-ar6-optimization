@@ -140,11 +140,19 @@ result_co2rf <- optim(par = par, fn = optim_beta_hector, comp_data = ar6_rf)
 # Awesome both fits of beta = 0.1332! -------------------------------------------------------------------
 # Run Hector with the new beta value and compare CO2 RF & the total RF 
 lapply(core_list, hector::reset)
-lapply(core_list, hector::setvar, dates = NA, var = hector::BETA(), value = result_co2rf$par[[1]], unit = getunits(hector::BETA()))
+lapply(core_list, hector::setvar, dates = NA, var = hector::BETA(), value = 0.13, unit = getunits(hector::BETA()))
 lapply(core_list, hector::reset)
 lapply(core_list, hector::run, runtodate = 2100)
-hector_data <- bind_rows(lapply(core_list, hector::fetchvars, dates = 1850:2100, vars = c(RF_CO2(), RF_TOTAL())))
+hector_data <- bind_rows(lapply(core_list, hector::fetchvars, dates = 1850:2100, vars = c(RF_CO2(), RF_TOTAL(), NPP())))
 hector_data$source <- "Hector"
+
+
+lapply(core_list, hector::reset)
+lapply(core_list, hector::setvar, dates = NA, var = hector::BETA(), value = 0.36, unit = getunits(hector::BETA()))
+lapply(core_list, hector::reset)
+lapply(core_list, hector::run, runtodate = 2100)
+hector_data1 <- bind_rows(lapply(core_list, hector::fetchvars, dates = 1850:2100, vars = c(RF_CO2(), NPP(), RF_TOTAL())))
+hector_data1$source <- "default"
 
 all_ar6_rf %>%
   filter(variable %in% RF_CO2()) %>% 
@@ -164,4 +172,9 @@ bind_rows(hector_data,
   NULL
 
 
-
+hector_data %>%  
+  bind_rows(hector_data1) %>%  
+  filter(variable %in% c(RF_CO2(), NPP())) %>% 
+  ggplot(aes(year, value, color = source, groupby = scenario)) + 
+  geom_line() + 
+  facet_wrap("variable", scales = "free")
